@@ -56,11 +56,21 @@ def DisplayPlot(train, valid, ylabel, number=0):
 
     
 def SaveStats(fname, data):
-    """Saves the model to a numpy file."""
+    """Saves the result to a numpy file."""
     print('Writing to ' + fname)
     np.savez_compressed(fname, **data)
     
 def LoadStats(fname):
-    """Loads model from numpy file."""
+    """Loads result from numpy file."""
     print('Loading from ' + fname)
     return dict(np.load(fname))
+
+def SaveModel(fname, model):
+    """Saves the model to a pth file."""
+    print('Writing to ' + fname)
+    torch.save(model.state_dict(), fname)
+
+def LoadModel(fname):
+    """Loads froma pth file."""
+    print('Loading from ' + fname)
+    return torch.load(fname)

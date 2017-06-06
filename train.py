@@ -24,7 +24,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--log-interval', type=int, default=20, metavar='N',
                     help='how many epochs to wait before logging training status')
-parser.add_argument('--gpu-id', type=int, default=2, metavar='N',
+parser.add_argument('--gpu-id', type=int, default=0, metavar='N',
                     help='select gpu id (default : 0)')
 parser.add_argument('--no-plot', default=True,
                     help='draw plot (default : True)')
@@ -83,7 +83,7 @@ def evaluate(epoch,data_type):
         correct += pred.eq(target.data).cpu().sum()
     valid_loss = valid_loss
     valid_loss /= len(loader) # loss function already averages over batch size
-    if epoch % args.log_interval == 0:
+    if epoch % args.log_interval == 0 or data_type == 'test':
          print(('Epoch {:3d} {} CE {:.5f} {} Acc {:.5f}').format(epoch, data_type, valid_loss, data_type, correct / len(loader.dataset)))
 
     return valid_loss, correct / len(loader.dataset)
@@ -101,19 +101,22 @@ for epoch in range(1, args.epochs + 1):
     valid_ce_list.append((epoch, valid_ce))
     valid_acc_list.append((epoch, valid_acc))
 
+test_ce, test_acc = evaluate(args.epochs,'test')
+
 if epoch % args.no_plot:
     DisplayPlot(train_ce_list, valid_ce_list, 'Cross Entropy', number=0)
     DisplayPlot(train_acc_list, valid_acc_list, 'Accuracy', number=1)
 
+
+
 stats = {
     'train_ce': train_ce_list,
     'valid_ce': valid_ce_list,
+    'test_ce': test_ce,
     'train_acc': train_acc_list,
-    'valid_acc': valid_acc_list
+    'valid_acc': valid_acc_list,
+    'test_acc': test_acc,
 }
 
-
-
-evaluate(args.epochs+1,'test')
-SaveStats(('stats/MNN_minibatch{}_lr{:.3f}_momentum{}_epoch{}.npz').format(args.batch_size,args.lr,args.epochs), stats)
-torch.save(model.state_dict(), ('models/MNN_minibatch{}_lr{:.3f}_momentum{}_epoch{}.pth').format(args.batch_size,args.lr,args.epochs))
+SaveStats(('stats/MNN_lr{:.2f}_momentum{:.1f}_minibatch{}_epoch{}.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
+SaveModel(('models/MNN_lr{:.2f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,args.epochs),model)
