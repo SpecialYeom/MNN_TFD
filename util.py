@@ -1,6 +1,14 @@
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import torch
 import torch.utils.data as data_utils
+
+import numpy as np
+import matplotlib.pyplot as plt
+plt.ion()
+
 
 def LoadData(fname):
     """Loads data from an NPZ file.
@@ -24,3 +32,35 @@ def LoadData(fname):
     valid = data_utils.TensorDataset(torch.from_numpy(inputs_valid), torch.from_numpy(target_valid))
     test = data_utils.TensorDataset(torch.from_numpy(inputs_test), torch.from_numpy(target_test))
     return train, valid, test
+
+
+
+def DisplayPlot(train, valid, ylabel, number=0):
+    """Displays training curve.
+
+    Args:
+        train: Training statistics.
+        valid: Validation statistics.
+        ylabel: Y-axis label of the plot.
+    """
+    plt.figure(number)
+    plt.clf()
+    train = np.array(train)
+    valid = np.array(valid)
+    plt.plot(train[:, 0], train[:, 1], 'b', label='Train')
+    plt.plot(valid[:, 0], valid[:, 1], 'g', label='Validation')
+    plt.xlabel('Epoch')
+    plt.ylabel(ylabel)
+    plt.legend()
+    plt.draw()
+
+    
+def SaveStats(fname, data):
+    """Saves the model to a numpy file."""
+    print('Writing to ' + fname)
+    np.savez_compressed(fname, **data)
+    
+def LoadStats(fname):
+    """Loads model from numpy file."""
+    print('Loading from ' + fname)
+    return dict(np.load(fname))

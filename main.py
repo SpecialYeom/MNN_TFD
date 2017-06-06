@@ -1,4 +1,7 @@
+from __future__ import division
 from __future__ import print_function
+
+import sys
 import argparse
 import torch
 import torch.optim as optim
@@ -19,8 +22,15 @@ parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum (default: 0.9)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
-parser.add_argument('--log-interval', type=int, default=34, metavar='N',
-                    help='how many batches to wait before logging training status')
+parser.add_argument('--log-interval', type=int, default=20, metavar='N',
+                    help='how many epochs to wait before logging training status')
+parser.add_argument('--gpu-id', type=int, default=2, metavar='N',
+                    help='select gpu id (default : 0)')
+parser.add_argument('--no-plot', default=True,
+                    help='draw plot (default : True)')
+
+model_fname = 'nn_model'
+stats_fname = 'nn_stats.npz'
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -34,8 +44,8 @@ test_loader = data_utils.DataLoader(test, batch_size=args.batch_size, shuffle=Fa
 
 model = Net()
 if args.cuda:
+    torch.cuda.set_device(args.gpu_id)
     model.cuda()
-
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 
@@ -51,15 +61,19 @@ def train(epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data[0]))
-def valid(epoch):
+
+def evaluate(epoch,data_type):
     model.eval()
     valid_loss = 0
     correct = 0
-    for data, target in valid_loader:
+    if data_type == 'train':
+        loader = train_loader
+    elif data_type == 'validation':
+        loader = valid_loader
+    elif data_type == 'test':
+        loader = test_loader
+    
+    for data, target in loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data.float(), volatile=True), Variable(target)
@@ -68,33 +82,38 @@ def valid(epoch):
         pred = y_pred.data.max(1)[1]
         correct += pred.eq(target.data).cpu().sum()
     valid_loss = valid_loss
-    valid_loss /= len(valid_loader) # loss function already averages over batch size
-    print('\nvalid set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        valid_loss, correct, len(valid_loader.dataset),
-        100. * correct / len(valid_loader.dataset)))
-                
+    valid_loss /= len(loader) # loss function already averages over batch size
+    if epoch % args.log_interval == 0:
+         print(('Epoch {:3d} {} CE {:.5f} {} Acc {:.5f}').format(epoch, data_type, valid_loss, data_type, correct / len(loader.dataset)))
 
-def test(epoch):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    for data, target in test_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data.float(), volatile=True), Variable(target)
-        y_pred =model(data)
-        test_loss += F.cross_entropy(y_pred, target).data[0]
-        pred = y_pred.data.max(1)[1]
-        correct += pred.eq(target.data).cpu().sum()
-    test_loss = test_loss
-    test_loss /= len(test_loader) # loss function already averages over batch size
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
-        
+    return valid_loss, correct / len(loader.dataset)
+ 
+train_ce_list = []
+valid_ce_list = []
+train_acc_list = []
+valid_acc_list = []
 for epoch in range(1, args.epochs + 1):
     train(epoch)
-    valid(epoch)
+    train_ce, train_acc = evaluate(epoch,'train')
+    valid_ce, valid_acc = evaluate(epoch,'validation')
+    train_ce_list.append((epoch, train_ce))
+    train_acc_list.append((epoch, train_acc))
+    valid_ce_list.append((epoch, valid_ce))
+    valid_acc_list.append((epoch, valid_acc))
+
+if epoch % args.no_plot:
+    DisplayPlot(train_ce_list, valid_ce_list, 'Cross Entropy', number=0)
+    DisplayPlot(train_acc_list, valid_acc_list, 'Accuracy', number=1)
+
+stats = {
+    'train_ce': train_ce_list,
+    'valid_ce': valid_ce_list,
+    'train_acc': train_acc_list,
+    'valid_acc': valid_acc_list
+}
 
 
-test(num_epochs+1)
+
+evaluate(args.epochs+1,'test')
+SaveStats(('stats/MNN_minibatch{}_lr{:.3f}_momentum{}_epoch{}.npz').format(args.batch_size,args.lr,args.epochs), stats)
+torch.save(model.state_dict(), ('models/MNN_minibatch{}_lr{:.3f}_momentum{}_epoch{}.pth').format(args.batch_size,args.lr,args.epochs))
