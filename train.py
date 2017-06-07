@@ -118,5 +118,5 @@ stats = {
     'test_acc': test_acc,
 }
 
-SaveStats(('stats/MNN_lr{:.2f}_momentum{:.1f}_minibatch{}_epoch{}.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
-SaveModel(('models/MNN_lr{:.2f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,args.epochs),model)
+SaveStats(('stats/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
+SaveModel(('models/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,args.epochs),model)
