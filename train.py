@@ -28,6 +28,8 @@ parser.add_argument('--gpu-id', type=int, default=0, metavar='N',
                     help='select gpu id (default : 0)')
 parser.add_argument('--no-plot', default=True,
                     help='draw plot (default : True)')
+parser.add_argument('--num-hidden-units', type=int , default=32, metavar='N',
+                    help='how many hidden units (default : 32)')
 
 model_fname = 'nn_model'
 stats_fname = 'nn_stats.npz'
@@ -42,10 +44,20 @@ train_loader = data_utils.DataLoader(train, batch_size=args.batch_size, shuffle=
 valid_loader = data_utils.DataLoader(valid, batch_size=args.batch_size, shuffle=True)
 test_loader = data_utils.DataLoader(test, batch_size=args.batch_size, shuffle=False)
 
-model = Net()
+
+if args.num_hidden_units == 32:
+    model = Net()
+    hidden =""
+else:
+    hidden ="_num_hidden_{}".format(args.num_hidden_units)
+    model = custNet(args.num_hidden_units)()
+
+    
 if args.cuda:
     torch.cuda.set_device(args.gpu_id)
     model.cuda()
+
+
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 
@@ -95,7 +107,7 @@ valid_acc_list = []
 for epoch in range(1, args.epochs + 1):
     train(epoch)
     if epoch % 200 == 0:
-        SaveModel(('models/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,epoch),model)
+        SaveModel(('models/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}'+hidden+'.pth').format(args.lr,args.momentum,args.batch_size,epoch),model)
     train_ce, train_acc = evaluate(epoch,'train')
     valid_ce, valid_acc = evaluate(epoch,'validation')
     train_ce_list.append((epoch, train_ce))
@@ -120,4 +132,4 @@ stats = {
     'test_acc': test_acc,
 }
 
-SaveStats(('stats/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
+SaveStats(('stats/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}'+hidden+'.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
