@@ -94,6 +94,8 @@ train_acc_list = []
 valid_acc_list = []
 for epoch in range(1, args.epochs + 1):
     train(epoch)
+    if epoch % 200 == 0:
+        SaveModel(('models/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,epoch),model)
     train_ce, train_acc = evaluate(epoch,'train')
     valid_ce, valid_acc = evaluate(epoch,'validation')
     train_ce_list.append((epoch, train_ce))
@@ -119,4 +121,3 @@ stats = {
 }
 
 SaveStats(('stats/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.npz').format(args.lr,args.momentum,args.batch_size,args.epochs), stats)
-SaveModel(('models/MNN_lr{:.3f}_momentum{:.1f}_minibatch{}_epoch{}.pth').format(args.lr,args.momentum,args.batch_size,args.epochs),model)

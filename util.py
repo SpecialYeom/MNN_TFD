@@ -35,7 +35,7 @@ def LoadData(fname):
 
 
 
-def DisplayPlot(train, valid, ylabel, number=0):
+def DisplayPlot(train, valid, ylabel, number=0,title = ""):
     """Displays training curve.
 
     Args:
@@ -52,6 +52,8 @@ def DisplayPlot(train, valid, ylabel, number=0):
     plt.xlabel('Epoch')
     plt.ylabel(ylabel)
     plt.legend()
+    if title != "":
+        plt.title(title)
     plt.draw()
 
     
