@@ -50,7 +50,12 @@ if args.num_hidden_units == 32:
     hidden =""
 else:
     hidden ="_num_hidden_{}".format(args.num_hidden_units)
-    model = custNet(args.num_hidden_units)()
+    num_of_first_layer = 16
+    if args.num_hidden_units > 60:
+        num_of_first_layer = 32
+    elif args.num_hidden_units > 100:
+        num_of_first_layer = 64
+    model = custNet(num_of_first_layer, args.num_hidden_units)()
 
     
 if args.cuda:
